@@ -115,8 +115,15 @@ def read_servo_ack_from_servo_to_efis(serial_port: serial.Serial):
     print([hex(i) for i in ack])
     return ack
 
-ser3 = serial.Serial("COM3", 38400, timeout=1)
-set_servo_number_efis_to_servo(ser3, 1)
+ser3 = serial.Serial("COM6", 38400, timeout=1)
+# set_servo_number_efis_to_servo(ser3, 1)
+# time.sleep(1)
+# read_servo_ack_from_servo_to_efis(ser3)
+send_servo_position_message_from_efis_to_servo(ser3, 0)
+time.sleep(.1)
+read_servo_ack_from_servo_to_efis(ser3)
+time.sleep(.1)
 send_servo_position_message_from_efis_to_servo(ser3, -1)
+time.sleep(.1)
 read_servo_ack_from_servo_to_efis(ser3)
 
