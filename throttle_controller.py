@@ -29,6 +29,7 @@ class ThrottleController:
         self.initialize()
         self.setup_logging()
         self.open_port()
+        self.initialize_servo()
 
     def initialize(self):
         with open(self.config_file) as fp:
@@ -59,6 +60,11 @@ class ThrottleController:
         if self.port == None:
             self.logger.error("Port not open")
             sys.exit(-2)
+        
+    def initialize_servo(self):
+        self.set_servo_number_efis_to_servo()
+        ack = self.port.read(100) #Large Number
+        self.logger.debug([hex(i) for i in ack])
 
     def calculate_checksum1(self, mesg_list: list[int], seed: int = 0):
         """Calculate the checksum of an one byte integer array of values
@@ -83,7 +89,7 @@ class ThrottleController:
         for i in mesg_list:
             checksum = checksum ^ i
         return checksum
-
+    
     def set_servo_number_efis_to_servo(self):
         """Set the servo number using a serial port connected with usb to rs232 cable
 
@@ -127,7 +133,7 @@ class ThrottleController:
             tgt_position = 0x00.to_bytes(2, byteorder="little")
         else:
             set_options_1 = [
-                0x01
+                0x71  #Torque of 7 and engage and reset torque measurement
             ]  # Here we will not reset torque measurement and not set torque
             tgt_position = (position).to_bytes(2, byteorder="little")
 
@@ -171,15 +177,18 @@ class ThrottleController:
         ack_size = 12
 
         ack = self.port.read(ack_size)
-
         ack_bytes = list(ack)
 
-        message_dict["torque"] = ack_bytes[9]
-        message_dict["voltage"] = ack_bytes[8]
-        message_dict["Position"] = ack_bytes[7] * 256 + ack_bytes[6]
+        if len(ack) < 12:
+            return {}
+
         message_dict["enganged"] = ack_bytes[5] & 0x01
         message_dict["slipping"] = ack_bytes[5] & 0x02
         message_dict["voltage_alarm"] = ack_bytes[5] & 0x03
+        message_dict["position"] = ack_bytes[7] * 256 + ack_bytes[6]
+        message_dict["voltage"] = ack_bytes[8]
+        message_dict["torque"] = ack_bytes[9]
+
         message_dict["ack_length"] = len(ack_bytes)
         self.logger.debug("Ack: ")
         self.logger.debug([hex(i) for i in ack])
@@ -194,10 +203,10 @@ class ThrottleController:
         """
         self.send_servo_position_message_from_efis_to_servo(self.port, position)
         time.sleep(0.05)
-        self.return_dict = self.read_servo_ack_from_servo_to_efis(self.port)
+        return(self.read_servo_ack_from_servo_to_efis(self.port))
 
     def run(self):
-        """Run the throttle controller"""
+        """Run a step of the throttle controller"""
         if self.mode == ServoStates.ERROR:  # error
             self.logger.error("General Servo Error...")
             return False
@@ -212,10 +221,11 @@ class ThrottleController:
                 < return_dict["position"]
                 < self.full_position + self.throttle_pad
             ):
-                Mode = ServoStates.ARMED  # goto arm
+                self.mode= ServoStates.ARMED  # goto arm
             if return_dict["slipping"] == 1:
-                Mode = ServoStates.STANDBY  # goto standby
-            self.logger.info("Servo Engaged to set position %d", self.full_position)
+                self.mode= ServoStates.STANDBY  # goto standby
+            self.logger.info("Servo Engaged to set position %d and torque %d and voltage %d", 
+                             self.full_position, return_dict["torque"], return_dict["voltage"])
             time.sleep(0.4)
         elif self.mode == ServoStates.ARMED:  # armed
             return_dict = self.command_servo(-1)
@@ -228,9 +238,9 @@ class ThrottleController:
                 < return_dict["position"]
                 < self.full_position + self.throttle_pad
             ):
-                Mode = ServoStates.ENGAGED  # engage
+                self.mode = ServoStates.ENGAGED  # engage
             if return_dict["slipping"] == 1:
-                Mode = ServoStates.STANDBY  # goto standby
+                self.mode= ServoStates.STANDBY  # goto standby
             self.logger.info(
                 "Servo ARMED with set position %d", return_dict["position"]
             )
