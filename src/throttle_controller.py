@@ -206,9 +206,9 @@ class ThrottleController:
         Args:
             position (int): position to command the servo to
         """
-        self.send_servo_position_message_from_efis_to_servo(self.port, position)
+        self.send_servo_position_message_from_efis_to_servo(position)
         time.sleep(0.05)
-        return self.read_servo_ack_from_servo_to_efis(self.port)
+        return self.read_servo_ack_from_servo_to_efis()
 
     def run(self):
         """Run a step of the throttle controller"""
