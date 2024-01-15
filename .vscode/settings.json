@@ -1,0 +1,8 @@
+{
+    "terminal.integrated.env.linux": {
+        "PYTHONPATH": "src"
+    },
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "src"
+    },
+}
