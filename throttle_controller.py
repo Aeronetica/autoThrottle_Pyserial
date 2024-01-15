@@ -3,16 +3,19 @@ import time
 import json
 import logging
 from enum import Enum
+import sys
+
 
 class ServoStates(Enum):
     ERROR = -1
     ENGAGED = 0
     ARMED = 1
     STANDBY = 2
-class ThrottleController():
-    
+
+
+class ThrottleController:
     def __init__(self, port_string: str, config_file: str, servo_number: int = 1):
-        """Throttle Controller constructor 
+        """Throttle Controller constructor
 
         Args:
             port_string (str): string containing the port to connect to
@@ -22,37 +25,41 @@ class ThrottleController():
         self.config_file = config_file
         self.servo_number = servo_number
         self.mode = ServoStates.ARMED
-        self.throttle_pad = 5  #clicks
+        self.throttle_pad = 5  # clicks
         self.initialize()
         self.setup_logging()
         self.open_port()
-        
-        
+
     def initialize(self):
         with open(self.config_file) as fp:
             params = json.load(fp)
         self.full_position = params["full_position"]
         self.over_torque = params["over_torque"]
-    
+
     def setup_logging(self):
-        self.logger = logging.getLogger('ThrottleController')
+        self.logger = logging.getLogger("ThrottleController")
         self.logger.setLevel(logging.DEBUG)
-        fh = logging.FileHandler('throttle_controller.log')
+        fh = logging.FileHandler("throttle_controller.log")
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
         ch.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         fh.setFormatter(formatter)
         self.logger.addHandler(fh)
         self.logger.addHandler(ch)
-        
+
     def open_port(self) -> bool:
         try:
             self.port = serial.Serial(self.port_string, 38400, timeout=1)
-        except:
-            self.port = None
+        except Exception:
             self.logger.error("Could not open port %s", self.port_string)
-    
+            sys.exit(-1)
+        if self.port == None:
+            self.logger.error("Port not open")
+            sys.exit(-2)
+
     def calculate_checksum1(self, mesg_list: list[int], seed: int = 0):
         """Calculate the checksum of an one byte integer array of values
 
@@ -64,7 +71,6 @@ class ThrottleController():
         for i in mesg_list:
             checksum = (checksum + i) & 0xFF
         return checksum
-
 
     def calculate_checksum2(self, mesg_list: list[int], seed: int = 0):
         """Calculate the checksum2 of an one byte integer array of values
@@ -78,7 +84,6 @@ class ThrottleController():
             checksum = checksum ^ i
         return checksum
 
-
     def set_servo_number_efis_to_servo(self):
         """Set the servo number using a serial port connected with usb to rs232 cable
 
@@ -91,19 +96,18 @@ class ThrottleController():
         set_servo_mesgs = [0x00, 0x00, 0xAA, 0x55]
         set_servo_number = 1
         set_servo_mesgs.append(set_servo_number & 0xFF)  # Set servo to number
-        set_servo_mesgs.append((set_servo_number ^ 0xFF) & 0xFF)  # Set servo message length
+        set_servo_mesgs.append(
+            (set_servo_number ^ 0xFF) & 0xFF
+        )  # Set servo message length
         # calculate xor of all bytes in set_servo_mesgs
         chks1 = [self.calculate_checksum1(set_servo_mesgs, seed=0xAA)]
         chks2 = [self.calculate_checksum2(set_servo_mesgs, seed=0x55)]
-        whole_message = start_mesgs + set_message_length + set_servo_mesgs + chks1 + chks2
-        print("Send Message: ")
-        print([hex(i) for i in whole_message])
-        if self.port is not None:
-            self.port.write(bytes(whole_message))
-        else:
-            self.logger.error("Port not open")
-
-
+        whole_message = (
+            start_mesgs + set_message_length + set_servo_mesgs + chks1 + chks2
+        )
+        self.logger.debug("Send Message: ")
+        self.logger.debug([hex(i) for i in whole_message])
+        self.port.write(bytes(whole_message))
 
     def send_servo_position_message_from_efis_to_servo(
         self, serial_port: serial.Serial, position: int
@@ -126,7 +130,7 @@ class ThrottleController():
                 0x01
             ]  # Here we will not reset torque measurement and not set torque
             tgt_position = (position).to_bytes(2, byteorder="little")
-        
+
         tgt_position_send = [tgt_position[0], tgt_position[1]]
 
         fill_bytes = (0).to_bytes(9, byteorder="little")
@@ -148,17 +152,15 @@ class ThrottleController():
             + tgt_position_send
             + fill_bytes_send
         )
-        print([hex(i) for i in set_servo_mesg])
         chks1 = [self.calculate_checksum1(set_servo_mesg, seed=0xAA)]
         chks2 = [self.calculate_checksum2(set_servo_mesg, seed=0x55)]
-        whole_message = start_mesgs + set_message_length + set_servo_mesg + chks1 + chks2
-        print("Send Message: ")
-        print([hex(i) for i in whole_message])
-        if self.port is not None:
-            self.port.write(bytes(whole_message))
-        else:
-            self.logger.error("Port not open")
-        
+        whole_message = (
+            start_mesgs + set_message_length + set_servo_mesg + chks1 + chks2
+        )
+        self.logger.debug("Send Message: ")
+        self.logger.debug([hex(i) for i in whole_message])
+        self.port.write(bytes(whole_message))
+
     def read_servo_ack_from_servo_to_efis(self, serial_port: serial.Serial):
         """Read the servo ack message from the servo to the EFIS
 
@@ -167,23 +169,21 @@ class ThrottleController():
         """
         message_dict = {}
         ack_size = 12
-        if self.port is not None:
-            ack = self.port.read(ack_size)
-        else:
-            self.logger.error("Port not open")
-            return None
+
+        ack = self.port.read(ack_size)
 
         ack_bytes = list(ack)
+
         message_dict["torque"] = ack_bytes[9]
         message_dict["voltage"] = ack_bytes[8]
-        message_dict["Position"] = ack_bytes[7]*256 + ack_bytes[6]
+        message_dict["Position"] = ack_bytes[7] * 256 + ack_bytes[6]
         message_dict["enganged"] = ack_bytes[5] & 0x01
         message_dict["slipping"] = ack_bytes[5] & 0x02
         message_dict["voltage_alarm"] = ack_bytes[5] & 0x03
         message_dict["ack_length"] = len(ack_bytes)
-        print("Ack: ")
-        print([hex(i) for i in ack])
-        
+        self.logger.debug("Ack: ")
+        self.logger.debug([hex(i) for i in ack])
+
         return message_dict
 
     def command_servo(self, position: int):
@@ -193,50 +193,52 @@ class ThrottleController():
             position (int): position to command the servo to
         """
         self.send_servo_position_message_from_efis_to_servo(self.port, position)
-        time.sleep(.05)
+        time.sleep(0.05)
         self.return_dict = self.read_servo_ack_from_servo_to_efis(self.port)
-    
+
     def run(self):
-        """Run the throttle controller
-        """
-        if self.mode == ServoStates.ERROR:  #error
-            self.logger.error("Servo in Error Mode")
-            time.sleep(.5)
-        elif self.mode == ServoStates.ENGAGED:   #engaged
+        """Run the throttle controller"""
+        if self.mode == ServoStates.ERROR:  # error
+            self.logger.error("General Servo Error...")
+            return False
+        elif self.mode == ServoStates.ENGAGED:  # engaged
             return_dict = self.command_servo(self.full_position)
             if not return_dict:
-                self.logger.error("Port not open")
+                self.logger.error("Serial Port not open")
                 self.mode = ServoStates.ERROR
-                return
-            if(self.full_position-self.throttle_pad < return_dict["position"] < self.full_position+self.throttle_pad):
-                Mode = ServoStates.ARMED #goto arm
-            if(return_dict["slipping"] == 1):
-                Mode = ServoStates.STANDBY #goto standby
+                return False
+            if (
+                self.full_position - self.throttle_pad
+                < return_dict["position"]
+                < self.full_position + self.throttle_pad
+            ):
+                Mode = ServoStates.ARMED  # goto arm
+            if return_dict["slipping"] == 1:
+                Mode = ServoStates.STANDBY  # goto standby
             self.logger.info("Servo Engaged to set position %d", self.full_position)
-            time.sleep(.4)
-        elif Mode == ServoStates.ARMED:  #armed
+            time.sleep(0.4)
+        elif self.mode == ServoStates.ARMED:  # armed
             return_dict = self.command_servo(-1)
             if not return_dict:
                 self.logger.error("Port not open")
                 self.mode = ServoStates.ERROR
                 return False
-            if(not (self.full_position-self.throttle_pad < return_dict["position"] < self.full_position+self.throttle_pad)):
-                Mode = ServoStates.ENGAGED  #engage
-            if(return_dict["slipping"] == 1):
-                Mode = ServoStates.STANDBY #goto standby
-            self.logger.info("Servo ARMED with set position %d", return_dict["position"])
-            time.sleep(.4)
-        elif Mode == ServoStates.STANDBY: #standby
+            if not (
+                self.full_position - self.throttle_pad
+                < return_dict["position"]
+                < self.full_position + self.throttle_pad
+            ):
+                Mode = ServoStates.ENGAGED  # engage
+            if return_dict["slipping"] == 1:
+                Mode = ServoStates.STANDBY  # goto standby
+            self.logger.info(
+                "Servo ARMED with set position %d", return_dict["position"]
+            )
+            time.sleep(0.4)
+        elif self.mode == ServoStates.STANDBY:  # standby
             self.logger.info("Servo STANDBY...")
-            time.sleep(.4)
-        elif Mode == ServoStates.ERROR: #error
-            self.logger.info("Servo Error...")
-            time.sleep(1)
-            return False
+            time.sleep(0.4)
         else:
             self.logger.error("Servo in unknown mode")
-            time.sleep(.5)
             return False
         return True
-
-    
