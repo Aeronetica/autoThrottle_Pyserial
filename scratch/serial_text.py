@@ -1,12 +1,14 @@
-print ("Hello AutoThrottle")
+print("Hello AutoThrottle")
+
+import time
 
 import serial
-import time
+
 ser3 = serial.Serial("COM3", 38400, timeout=1)
 ser4 = serial.Serial("COM4", 38400, timeout=1)
 # h = 95
 # i = 22
-#Can we do read/write with the same one?
+# Can we do read/write with the same one?
 for i in range(0, 100):
     ser3.write(b"hello from COM 3")
     ser4.write(b"hello from COM 4")
@@ -16,9 +18,9 @@ for i in range(0, 100):
 print("done")
 # time.sleep(.1)
 
-# # Read line   
+# # Read line
 # while True:
 #     # Send character 'S' to start the program
-    
+
 
 # print("Done")
