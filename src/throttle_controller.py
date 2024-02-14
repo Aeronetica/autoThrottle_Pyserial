@@ -80,6 +80,8 @@ class ThrottleController:
         if self.port is None:
             self.logger.error("Port not open")
             sys.exit(-2)
+        else:
+            self.logger.error("Port open")
 
     def initialize_servo(self):
         """Initialize the servo by setting the servo number"""
