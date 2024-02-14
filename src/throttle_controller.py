@@ -2,6 +2,7 @@
     by the throttle controller class. The throttle controller class is used to
     control the throttle servo. The throttle servo is a 12V servo that is
     controlled by a serial port."""
+
 import json
 import logging
 import sys
@@ -68,8 +69,10 @@ class ThrottleController:
         """Open the serial port to the servo and return if it was successful or not"""
         try:
             self.port = serial.Serial(self.port_string, 38400, timeout=1)
-        except Exception:
-            self.logger.error("Could not open port %s", self.port_string)
+        except Exception as e:
+            self.logger.error(
+                "Could not open port %s, because of exception %s", self.port_string, e
+            )
             sys.exit(-1)
         if self.port is None:
             self.logger.error("Port not open")
