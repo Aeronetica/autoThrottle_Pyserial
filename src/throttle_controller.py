@@ -39,7 +39,7 @@ class ThrottleController:
         self.servo_number = servo_number
         self.mode = ServoStates.ARMED
         self.throttle_pad = 5  # clicks
-        self.message_dict = {}
+        self.return_dict = {}
         self.initialize()
         self.setup_logging()
         self.open_port()
@@ -198,18 +198,18 @@ class ThrottleController:
         if len(ack) < 12:
             return {}
 
-        self.message_dict["enganged"] = ack_bytes[5] & 0x01
-        self.message_dict["slipping"] = ack_bytes[5] & 0x02
-        self.message_dict["voltage_alarm"] = ack_bytes[5] & 0x03
-        self.message_dict["position"] = ack_bytes[7] * 256 + ack_bytes[6]
-        self.message_dict["voltage"] = ack_bytes[8]
-        self.message_dict["torque"] = ack_bytes[9]
+        message_dict["enganged"] = ack_bytes[5] & 0x01
+        message_dict["slipping"] = ack_bytes[5] & 0x02
+        message_dict["voltage_alarm"] = ack_bytes[5] & 0x03
+        message_dict["position"] = ack_bytes[7] * 256 + ack_bytes[6]
+        message_dict["voltage"] = ack_bytes[8]
+        message_dict["torque"] = ack_bytes[9]
 
-        self.message_dict["ack_length"] = len(ack_bytes)
+        message_dict["ack_length"] = len(ack_bytes)
         self.logger.debug(
             "Servo position: %d - Servo torque %d",
-            self.message_dict["position"],
-            self.message_dict["torque"],
+            message_dict["position"],
+            message_dict["torque"],
         )
         self.logger.debug("Ack: ")
         self.logger.debug([hex(i) for i in ack])
@@ -234,42 +234,42 @@ class ThrottleController:
 
         # Normal Operation
         if self.mode == ServoStates.ENGAGED:  # engaged
-            return_dict = self.command_servo(self.full_position)
-            if not return_dict:
+            self.return_dict = self.command_servo(self.full_position)
+            if not self.return_dict:
                 self.logger.error("Serial Port not open")
                 self.mode = ServoStates.ERROR
                 return False
             if (
                 self.full_position - self.throttle_pad
-                < return_dict["position"]
+                < self.return_dict["position"]
                 < self.full_position + self.throttle_pad
             ):
                 self.mode = ServoStates.ARMED  # goto arm
-            if return_dict["slipping"] == 1:
+            if self.return_dict["slipping"] == 1:
                 self.mode = ServoStates.STANDBY  # goto standby
             self.logger.debug(
                 "Servo Engaged to set position %d and torque %d and voltage %d",
                 self.full_position,
-                return_dict["torque"],
-                return_dict["voltage"],
+                self.return_dict["torque"],
+                self.return_dict["voltage"],
             )
             time.sleep(0.4)
         elif self.mode == ServoStates.ARMED:  # armed
-            return_dict = self.command_servo(-1)
-            if not return_dict:
+            self.return_dict = self.command_servo(-1)
+            if not self.return_dict:
                 self.logger.error("Port not open")
                 self.mode = ServoStates.ERROR
                 return False
             if not (
                 self.full_position - self.throttle_pad
-                < return_dict["position"]
+                < self.return_dict["position"]
                 < self.full_position + self.throttle_pad
             ):
                 self.mode = ServoStates.ENGAGED  # engage
-            if return_dict["slipping"] == 1:
+            if self.return_dict["slipping"] == 1:
                 self.mode = ServoStates.STANDBY  # goto standby
             self.logger.info(
-                "Servo ARMED with set position %d", return_dict["position"]
+                "Servo ARMED with set position %d", self.return_dict["position"]
             )
             time.sleep(0.4)
         elif self.mode == ServoStates.STANDBY:  # standby
