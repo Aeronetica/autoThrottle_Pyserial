@@ -39,6 +39,7 @@ class ThrottleController:
         self.servo_number = servo_number
         self.mode = ServoStates.ARMED
         self.throttle_pad = 5  # clicks
+        self.message_dict = {}
         self.initialize()
         self.setup_logging()
         self.open_port()
@@ -195,18 +196,18 @@ class ThrottleController:
         if len(ack) < 12:
             return {}
 
-        message_dict["enganged"] = ack_bytes[5] & 0x01
-        message_dict["slipping"] = ack_bytes[5] & 0x02
-        message_dict["voltage_alarm"] = ack_bytes[5] & 0x03
-        message_dict["position"] = ack_bytes[7] * 256 + ack_bytes[6]
-        message_dict["voltage"] = ack_bytes[8]
-        message_dict["torque"] = ack_bytes[9]
+        self.message_dict["enganged"] = ack_bytes[5] & 0x01
+        self.message_dict["slipping"] = ack_bytes[5] & 0x02
+        self.message_dict["voltage_alarm"] = ack_bytes[5] & 0x03
+        self.message_dict["position"] = ack_bytes[7] * 256 + ack_bytes[6]
+        self.message_dict["voltage"] = ack_bytes[8]
+        self.message_dict["torque"] = ack_bytes[9]
 
-        message_dict["ack_length"] = len(ack_bytes)
-        self.logger.info(
+        self.message_dict["ack_length"] = len(ack_bytes)
+        self.logger.debug(
             "Servo position: %d - Servo torque %d",
-            message_dict["position"],
-            message_dict["torque"],
+            self.message_dict["position"],
+            self.message_dict["torque"],
         )
         self.logger.debug("Ack: ")
         self.logger.debug([hex(i) for i in ack])
