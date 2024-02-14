@@ -56,7 +56,7 @@ class ThrottleController:
     def setup_logging(self):
         """Setup the logging for the throttle controller. Logs to a file and to the console"""
         self.logger = logging.getLogger("ThrottleController")
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
         fh = logging.FileHandler("throttle_controller.log")
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
