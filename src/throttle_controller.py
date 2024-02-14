@@ -11,6 +11,8 @@ from enum import Enum
 
 import serial
 
+# in order to use serial, you need to `pip install pySerial``
+
 
 class ServoStates(Enum):
     """Enum for the different states of the servo"""
@@ -53,7 +55,7 @@ class ThrottleController:
     def setup_logging(self):
         """Setup the logging for the throttle controller. Logs to a file and to the console"""
         self.logger = logging.getLogger("ThrottleController")
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
         fh = logging.FileHandler("throttle_controller.log")
         fh.setLevel(logging.DEBUG)
         ch = logging.StreamHandler()
@@ -141,9 +143,11 @@ class ThrottleController:
         set_message_header = [0x01, 0x00]
         set_frespond = [0x01]
         if position == -1:
+            self.logger.info("Not commanding servo position, just listening")
             set_options_1 = [0x00]
             tgt_position = 0x00.to_bytes(2, byteorder="little")
         else:
+            self.logger.info("Commanding servo position to %d", position)
             set_options_1 = [
                 0x71  # Torque of 7 and engage and reset torque measurement
             ]  # Here we will not reset torque measurement and not set torque
@@ -175,6 +179,7 @@ class ThrottleController:
         whole_message = (
             start_mesgs + set_message_length + set_servo_mesg + chks1 + chks2
         )
+
         self.logger.debug("Send Message: ")
         self.logger.debug([hex(i) for i in whole_message])
         self.port.write(bytes(whole_message))
@@ -198,6 +203,11 @@ class ThrottleController:
         message_dict["torque"] = ack_bytes[9]
 
         message_dict["ack_length"] = len(ack_bytes)
+        self.logger.info(
+            "Servo position: %d - Servo torque %d",
+            message_dict["position"],
+            message_dict["torque"],
+        )
         self.logger.debug("Ack: ")
         self.logger.debug([hex(i) for i in ack])
 
