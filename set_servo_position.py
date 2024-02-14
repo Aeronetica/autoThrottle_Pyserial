@@ -21,9 +21,8 @@ while True:
         break
     the_throttle_controller.logger.debug(f"Sim Time: {current}")
     print(
-        "Servo commanded to %d - Current Servo Position is %d",
-        the_throttle_controller.full_position,
-        the_throttle_controller.return_dict["position"],
+        f"Servo commanded to {the_throttle_controller.full_position} - "
+        + f"Current Servo Position is {the_throttle_controller.return_dict['position']}"
     )
     # if keyboard.is_pressed("t"):
     #     the_throttle_controller.logger.warn(f"Sim Time: {current}")

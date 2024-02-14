@@ -18,12 +18,9 @@ with open("./cfg/throttle_config.json", encoding="utf_8") as fp:
 while True:
     current = time.time() - start
     the_throttle_controller.logger.debug(f"Sim Time: {current}")
+    the_throttle_controller.full_position = -1
     if not the_throttle_controller.run():
         break
-    the_throttle_controller.full_position = -1
     print(
-        "Current Servo Position is %d",
-        the_throttle_controller.return_dict["position"],
+        f"Current Servo Position is {the_throttle_controller.return_dict['position']}"
     )
-    # if keyboard.is_pressed("t"):
-    #     the_throttle_controller.logger.warn(f"Sim Time: {current}")
