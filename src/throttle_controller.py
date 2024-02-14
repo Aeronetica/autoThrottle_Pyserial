@@ -143,11 +143,11 @@ class ThrottleController:
         set_message_header = [0x01, 0x00]
         set_frespond = [0x01]
         if position == -1:
-            self.logger.info("Not commanding servo position, just listening")
+            self.logger.info("**** Not commanding servo position, just listening")
             set_options_1 = [0x00]
             tgt_position = 0x00.to_bytes(2, byteorder="little")
         else:
-            self.logger.info("Commanding servo position to %d", position)
+            self.logger.info("**** Commanding servo position to %d", position)
             set_options_1 = [
                 0x71  # Torque of 7 and engage and reset torque measurement
             ]  # Here we will not reset torque measurement and not set torque
