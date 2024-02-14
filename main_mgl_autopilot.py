@@ -1,4 +1,4 @@
-from throttle_controller import ThrottleController
+from src.throttle_controller import ThrottleController
 import time
 import json
 
