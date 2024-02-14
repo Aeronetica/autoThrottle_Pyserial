@@ -27,7 +27,7 @@ while True:
     if current < 2.0 or current > 4.0:
         print(
             "Current Servo Position is %d",
-            the_throttle_controller.return_dict["servo_position"],
+            the_throttle_controller.return_dict["position"], 
         )
     # if keyboard.is_pressed("t"):
     #     the_throttle_controller.logger.warn(f"Sim Time: {current}")
