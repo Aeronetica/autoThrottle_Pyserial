@@ -244,7 +244,7 @@ class ThrottleController:
                 self.mode = ServoStates.ARMED  # goto arm
             if return_dict["slipping"] == 1:
                 self.mode = ServoStates.STANDBY  # goto standby
-            self.logger.info(
+            self.logger.debug(
                 "Servo Engaged to set position %d and torque %d and voltage %d",
                 self.full_position,
                 return_dict["torque"],
