@@ -17,13 +17,10 @@ with open("./cfg/throttle_config.json", encoding="utf_8") as fp:
 "To move the servo to the command position specified in the throttle_config.json file press 'c'"
 while True:
     current = time.time() - start
+    the_throttle_controller.logger.debug(f"Sim Time: {current}")
     if not the_throttle_controller.run():
         break
-    the_throttle_controller.logger.debug(f"Sim Time: {current}")
-    if 2.0 < current < 4.0:
-        the_throttle_controller.full_position = params["full_position"]
-    else:
-        the_throttle_controller.full_position = -1
+    the_throttle_controller.full_position = -1
     print(
         "Current Servo Position is %d",
         the_throttle_controller.return_dict["position"],
