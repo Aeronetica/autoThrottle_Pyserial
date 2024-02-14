@@ -21,13 +21,12 @@ while True:
         break
     the_throttle_controller.logger.debug(f"Sim Time: {current}")
     if 2.0 < current < 4.0:
-        the_throttle_controller.full_position = -1
-    else:
         the_throttle_controller.full_position = params["full_position"]
-    if current < 2.0 or current > 4.0:
-        print(
-            "Current Servo Position is %d",
-            the_throttle_controller.return_dict["position"], 
-        )
+    else:
+        the_throttle_controller.full_position = -1
+    print(
+        "Current Servo Position is %d",
+        the_throttle_controller.return_dict["position"],
+    )
     # if keyboard.is_pressed("t"):
     #     the_throttle_controller.logger.warn(f"Sim Time: {current}")
