@@ -1,6 +1,5 @@
 from throttle_controller import ThrottleController
 import time
-import keyboard
 import json
 
 print("Hello AutoThrottle")
@@ -19,17 +18,17 @@ with open("./cfg/throttle_config.json", encoding="utf_8") as fp:
 while True:
     current = time.time() - start
     the_throttle_controller.logger.info(f"Sim Time: {current}")
-    if not keyboard.is_pressed("c"):
+    if 2.0 < current < 4.0:
         the_throttle_controller.full_position = -1
     else:
         the_throttle_controller.full_position = params["full_position"]
-    if keyboard.is_pressed("p"):
+    if current < 2.0 or current > 4.0:
         print(
             "Current Servo Position is %d",
             the_throttle_controller.message_dict["servo_position"],
         )
-    if keyboard.is_pressed("t"):
-        the_throttle_controller.logger.warn(f"Sim Time: {current}")
-    
+    # if keyboard.is_pressed("t"):
+    #     the_throttle_controller.logger.warn(f"Sim Time: {current}")
+
     if not the_throttle_controller.run():
         break
